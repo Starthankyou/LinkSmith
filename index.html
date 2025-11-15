@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkSmith - Personal Knowledge Pool</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Header / Navigation -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">🔗 LinkSmith</h1>
+            <p class="tagline">Minimal management, maximum consumption</p>
+            <nav class="nav">
+                <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+                <button class="nav-btn" data-view="import">Import</button>
+                <button class="nav-btn" data-view="random">Random Pick</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Dashboard View -->
+        <section id="dashboard-view" class="view active">
+            <div class="container dashboard-layout">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="sidebar-section">
+                        <h3>Search</h3>
+                        <input type="text" id="search-input" placeholder="Search by title, domain, or tag..." class="search-input">
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>Status Filter</h3>
+                        <div class="filter-group">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="status-filter" value="all" checked>
+                                <span>All</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="status-filter" value="unread">
+                                <span>Unread</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="status-filter" value="read">
+                                <span>Read</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="status-filter" value="frozen">
+                                <span>Frozen</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>Platform Tags</h3>
+                        <div id="platform-tags" class="tag-cloud"></div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>Custom Tags</h3>
+                        <div id="custom-tags" class="tag-cloud"></div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <button id="clear-filters-btn" class="btn btn-secondary">Clear All Filters</button>
+                    </div>
+                </aside>
+
+                <!-- Main Content Area -->
+                <div class="content-area">
+                    <div class="content-header">
+                        <div class="stats">
+                            <span id="total-count">0</span> links
+                            <span class="separator">|</span>
+                            <span id="unread-count">0</span> unread
+                        </div>
+                        <div class="sort-controls">
+                            <label>Sort by:</label>
+                            <select id="sort-select" class="sort-select">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                                <option value="unread-first">Unread First</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="links-container" class="links-container">
+                        <!-- Link cards will be rendered here -->
+                    </div>
+
+                    <div class="pagination">
+                        <button id="prev-page" class="btn btn-secondary" disabled>Previous</button>
+                        <span id="page-info">Page 1</span>
+                        <button id="next-page" class="btn btn-secondary">Next</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Import View -->
+        <section id="import-view" class="view">
+            <div class="container">
+                <div class="import-container">
+                    <h2>Import Links</h2>
+                    <p class="instruction">Paste multiple URLs (one per line) to import them into your knowledge pool.</p>
+
+                    <textarea id="import-textarea" class="import-textarea" placeholder="https://www.youtube.com/watch?v=example&#10;https://medium.com/article-example&#10;https://twitter.com/user/status/123456"></textarea>
+
+                    <div class="import-options">
+                        <label for="batch-tags">Add tags to all (comma-separated, optional):</label>
+                        <input type="text" id="batch-tags" class="batch-tags-input" placeholder="programming, tutorial, important">
+                    </div>
+
+                    <button id="import-btn" class="btn btn-primary">Import Links</button>
+
+                    <div id="import-result" class="import-result"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Random Picker View -->
+        <section id="random-view" class="view">
+            <div class="container">
+                <div class="random-container">
+                    <h2>Random Pick</h2>
+                    <p class="instruction">Get a random link from your current filtered pool to consume next.</p>
+
+                    <button id="random-pick-btn" class="btn btn-primary btn-large">🎲 Pick Random Link</button>
+
+                    <div id="random-result" class="random-result">
+                        <!-- Random result card will appear here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 LinkSmith | Personal Knowledge Pool</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
