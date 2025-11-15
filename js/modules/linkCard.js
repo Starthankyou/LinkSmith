@@ -112,6 +112,7 @@ export class LinkCardRenderer {
                         ? `<button class="btn btn-sm btn-secondary unfreeze-link" data-link-id="${link.id}">Unfreeze</button>`
                         : `<button class="btn btn-sm btn-warning freeze-link" data-link-id="${link.id}">Freeze 30d</button>`
                     }
+                    <button class="btn btn-sm btn-danger delete-link" data-link-id="${link.id}">Delete</button>
                 </div>
             </div>
         `;
@@ -254,6 +255,14 @@ export class LinkCardRenderer {
                 this.handleUnfreeze(linkId);
             });
         });
+
+        // Delete
+        document.querySelectorAll('.delete-link').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const linkId = e.target.dataset.linkId;
+                this.handleDelete(linkId);
+            });
+        });
     }
 
     /**
@@ -313,6 +322,18 @@ export class LinkCardRenderer {
         this.storage.unfreezeLink(linkId);
         if (this.onLinkAction) {
             this.onLinkAction('unfreeze', linkId);
+        }
+    }
+
+    /**
+     * Handle delete (soft delete)
+     */
+    handleDelete(linkId) {
+        if (confirm('確定要刪除此連結嗎？（可在 Tags 頁面還原）')) {
+            this.storage.deleteLink(linkId);
+            if (this.onLinkAction) {
+                this.onLinkAction('delete', linkId);
+            }
         }
     }
 

@@ -20,7 +20,7 @@ class LinkSmithApp {
         this.renderer = new LinkCardRenderer(this.storage);
         this.search = new SearchManager(this.storage);
         this.randomPicker = new RandomPicker(this.storage, this.search);
-        this.tagsManagement = new TagsManagement(this.tagLibrary, this.tagSelector);
+        this.tagsManagement = new TagsManagement(this.tagLibrary, this.tagSelector, this.storage);
 
         this.currentView = 'dashboard';
         this.currentSort = 'newest';

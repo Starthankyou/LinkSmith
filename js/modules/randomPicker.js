@@ -74,6 +74,9 @@ export class RandomPicker {
                     <button class="btn btn-warning random-freeze" data-link-id="${link.id}">
                         ❄️ Freeze 30d
                     </button>
+                    <button class="btn btn-danger random-delete" data-link-id="${link.id}">
+                        🗑️ Delete
+                    </button>
                 </div>
             </div>
         `;
@@ -137,6 +140,15 @@ export class RandomPicker {
                 this.handleFreeze(linkId);
             });
         }
+
+        // Delete button
+        const deleteBtn = document.querySelector('.random-delete');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                const linkId = e.target.dataset.linkId;
+                this.handleDelete(linkId);
+            });
+        }
     }
 
     /**
@@ -182,6 +194,21 @@ export class RandomPicker {
         setTimeout(() => {
             this.renderRandomResult();
         }, 800);
+    }
+
+    /**
+     * Handle delete (soft delete)
+     */
+    handleDelete(linkId) {
+        if (confirm('確定要刪除此連結嗎？（可在 Tags 頁面還原）')) {
+            this.storage.deleteLink(linkId);
+            this.showMessage('Link deleted! Picking another...');
+
+            // Pick another immediately
+            setTimeout(() => {
+                this.renderRandomResult();
+            }, 800);
+        }
     }
 
     /**

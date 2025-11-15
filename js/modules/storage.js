@@ -172,6 +172,39 @@ export class StorageManager {
     }
 
     /**
+     * Soft delete link (mark as deleted but don't remove)
+     */
+    deleteLink(id) {
+        return this.updateLink(id, {
+            deleted: true,
+            deletedAt: new Date().toISOString()
+        });
+    }
+
+    /**
+     * Restore deleted link
+     */
+    restoreLink(id) {
+        return this.updateLink(id, {
+            deleted: false,
+            deletedAt: null
+        });
+    }
+
+    /**
+     * Permanently delete link (hard delete)
+     */
+    permanentlyDeleteLink(id) {
+        const index = this.links.findIndex(link => link.id === id);
+        if (index !== -1) {
+            this.links.splice(index, 1);
+            this.saveUserData();
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Get all links
      */
     getAllLinks() {
@@ -183,6 +216,11 @@ export class StorageManager {
      */
     getFilteredLinks(filters = {}) {
         let filtered = [...this.links];
+
+        // Exclude deleted links (unless explicitly requesting them)
+        if (!filters.includeDeleted) {
+            filtered = filtered.filter(link => !link.deleted);
+        }
 
         // Search filter
         if (filters.search) {
@@ -274,12 +312,21 @@ export class StorageManager {
      * Get statistics
      */
     getStats() {
-        const total = this.links.length;
-        const unread = this.links.filter(l => l.status === 'unread').length;
-        const read = this.links.filter(l => l.status === 'read').length;
-        const frozen = this.links.filter(l => l.status === 'frozen').length;
+        const activeLinks = this.links.filter(l => !l.deleted);
+        const total = activeLinks.length;
+        const unread = activeLinks.filter(l => l.status === 'unread').length;
+        const read = activeLinks.filter(l => l.status === 'read').length;
+        const frozen = activeLinks.filter(l => l.status === 'frozen').length;
+        const deleted = this.links.filter(l => l.deleted).length;
 
-        return { total, unread, read, frozen };
+        return { total, unread, read, frozen, deleted };
+    }
+
+    /**
+     * Get all deleted links
+     */
+    getDeletedLinks() {
+        return this.links.filter(link => link.deleted);
     }
 
     /**

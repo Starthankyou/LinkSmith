@@ -4,9 +4,10 @@
  */
 
 export class TagsManagement {
-    constructor(tagLibrary, tagSelector) {
+    constructor(tagLibrary, tagSelector, storageManager) {
         this.tagLibrary = tagLibrary;
         this.tagSelector = tagSelector;
+        this.storage = storageManager;
     }
 
     /**
@@ -14,6 +15,7 @@ export class TagsManagement {
      */
     init() {
         this.renderStatistics();
+        this.renderDeletedLinks();
         this.renderShortcuts();
         this.renderCategories();
         this.attachEventListeners();
@@ -70,6 +72,60 @@ export class TagsManagement {
         }
 
         container.innerHTML = html;
+    }
+
+    /**
+     * Render deleted links list
+     */
+    renderDeletedLinks() {
+        const container = document.getElementById('deleted-links-list');
+        if (!container) return;
+
+        const deletedLinks = this.storage.getDeletedLinks();
+
+        if (deletedLinks.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted);">無已刪除連結</p>';
+            return;
+        }
+
+        let html = `<p style="margin-bottom: 1rem; color: var(--text-secondary);">共 ${deletedLinks.length} 個已刪除連結</p>`;
+
+        deletedLinks.forEach(link => {
+            const deletedDate = link.deletedAt ? new Date(link.deletedAt).toLocaleDateString() : '未知';
+            html += `
+                <div class="deleted-link-item">
+                    <div class="deleted-link-info">
+                        <div class="deleted-link-title">${this.escapeHtml(link.title)}</div>
+                        <div class="deleted-link-meta">
+                            <span>🌐 ${this.escapeHtml(link.domain)}</span>
+                            <span>|</span>
+                            <span>刪除於 ${deletedDate}</span>
+                        </div>
+                    </div>
+                    <div class="deleted-link-actions">
+                        <button class="btn btn-sm btn-success restore-link" data-link-id="${link.id}">還原</button>
+                        <button class="btn btn-sm btn-danger permanently-delete" data-link-id="${link.id}">永久刪除</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Attach event listeners
+        container.querySelectorAll('.restore-link').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const linkId = e.target.dataset.linkId;
+                this.restoreLink(linkId);
+            });
+        });
+
+        container.querySelectorAll('.permanently-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const linkId = e.target.dataset.linkId;
+                this.permanentlyDeleteLink(linkId);
+            });
+        });
     }
 
     /**
@@ -357,6 +413,30 @@ export class TagsManagement {
             alert('匯入成功！');
         } catch (error) {
             alert('匯入失敗：' + error.message);
+        }
+    }
+
+    /**
+     * Restore deleted link
+     */
+    restoreLink(linkId) {
+        if (confirm('確定要還原此連結嗎？')) {
+            this.storage.restoreLink(linkId);
+            this.renderDeletedLinks();
+            this.renderStatistics();
+            alert('連結已還原！');
+        }
+    }
+
+    /**
+     * Permanently delete link
+     */
+    permanentlyDeleteLink(linkId) {
+        if (confirm('確定要永久刪除此連結嗎？此操作無法復原！')) {
+            this.storage.permanentlyDeleteLink(linkId);
+            this.renderDeletedLinks();
+            this.renderStatistics();
+            alert('連結已永久刪除！');
         }
     }
 
