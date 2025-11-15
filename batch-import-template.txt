@@ -1,0 +1,32 @@
+# LinkSmith 批次輸入範例
+# 格式說明：
+# URL | 標題 | 標籤 | 描述（可選）
+# - 使用 | 分隔欄位
+# - 標籤用逗號分隔
+# - 標題和描述如果留空會自動生成
+# - 以 # 開頭的行為註解
+
+# 範例 1：完整格式
+https://www.youtube.com/watch?v=example1 | JavaScript 完整教學 2025 | programming,javascript,tutorial | 非常詳細的 JS 教學影片
+
+# 範例 2：只有 URL 和標籤
+https://medium.com/article-example | | programming,article
+
+# 範例 3：只有 URL（會自動生成標題和平台標籤）
+https://github.com/awesome-lists/awesome-javascript
+
+# 範例 4：URL + 標題
+https://dev.to/some-article | Building Modern Web Apps |
+
+# 更多範例連結：
+
+https://www.youtube.com/watch?v=dQw4w9WgXcQ | Web Development Basics | web-dev,tutorial,beginner
+https://medium.com/@author/react-hooks-guide | React Hooks 完全指南 | react,programming,tutorial
+https://github.com/facebook/react | React Official Repo | react,github,library
+https://stackoverflow.com/questions/123/how-to-learn-js | How to Learn JavaScript | javascript,learning,q&a
+https://www.reddit.com/r/programming/comments/example | Best Programming Resources 2025 | programming,resources,discussion
+https://twitter.com/user/status/123 | | tech-news,twitter
+https://news.ycombinator.com/item?id=12345 | Show HN: My New Project | startup,show-hn,discussion
+https://www.example-blog.com/css-grid | CSS Grid Layout Guide | css,frontend,tutorial
+https://linkedin.com/posts/example | Career Tips for Developers | career,advice,professional
+https://techcrunch.com/2025/11/01/ai-startup | AI Startup Raises $50M | ai,startup,funding,news

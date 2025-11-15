@@ -104,9 +104,43 @@
             <div class="container">
                 <div class="import-container">
                     <h2>Import Links</h2>
-                    <p class="instruction">Paste multiple URLs (one per line) to import them into your knowledge pool.</p>
+                    <p class="instruction">Paste URLs to import them into your knowledge pool. Supports two formats:</p>
 
-                    <textarea id="import-textarea" class="import-textarea" placeholder="https://www.youtube.com/watch?v=example&#10;https://medium.com/article-example&#10;https://twitter.com/user/status/123456"></textarea>
+                    <div class="format-help">
+                        <details>
+                            <summary><strong>📋 Import Formats (click to expand)</strong></summary>
+                            <div class="format-examples">
+                                <h4>Format 1: Simple (just URLs)</h4>
+                                <pre>https://www.youtube.com/watch?v=example
+https://medium.com/article-example
+https://github.com/user/repo</pre>
+
+                                <h4>Format 2: Structured (with metadata)</h4>
+                                <pre>URL | Title | Tags | Description
+
+https://www.youtube.com/watch?v=example | JavaScript Tutorial | programming,js,tutorial | Great intro video
+https://medium.com/article | | programming,article
+https://github.com/user/repo | My Awesome Project | github,opensource</pre>
+
+                                <p><strong>Tips:</strong></p>
+                                <ul>
+                                    <li>Use <code>|</code> to separate fields (URL | Title | Tags | Description)</li>
+                                    <li>Tags should be comma-separated</li>
+                                    <li>Leave Title empty to auto-generate from URL</li>
+                                    <li>Lines starting with # are treated as comments</li>
+                                    <li>Batch tags below will be added to ALL imported links</li>
+                                </ul>
+                            </div>
+                        </details>
+                    </div>
+
+                    <textarea id="import-textarea" class="import-textarea" placeholder="Simple format:
+https://www.youtube.com/watch?v=example
+https://medium.com/article-example
+
+Structured format:
+https://www.youtube.com/watch?v=example | JavaScript Tutorial | programming,js
+https://github.com/user/repo | | opensource,github"></textarea>
 
                     <div class="import-options">
                         <label for="batch-tags">Add tags to all (comma-separated, optional):</label>

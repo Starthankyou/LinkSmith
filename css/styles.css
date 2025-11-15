@@ -492,7 +492,73 @@ body {
 
 .instruction {
     color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.format-help {
     margin-bottom: 1.5rem;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.format-help details summary {
+    cursor: pointer;
+    user-select: none;
+    padding: 0.5rem;
+    list-style: none;
+}
+
+.format-help details summary::-webkit-details-marker {
+    display: none;
+}
+
+.format-help details[open] summary {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.format-examples {
+    padding: 0.5rem;
+}
+
+.format-examples h4 {
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.format-examples pre {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    font-size: 0.8125rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+    font-family: 'Courier New', monospace;
+}
+
+.format-examples ul {
+    margin-left: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.format-examples li {
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.format-examples code {
+    background-color: var(--bg-secondary);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
 }
 
 .import-textarea {
