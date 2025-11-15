@@ -105,34 +105,24 @@ export class TagSelector {
             html += '</div>';
         }
 
-        // Categories section
-        html += '<div class="tag-categories">';
+        // Categories section - simplified to show only category names
+        html += '<div class="tag-categories-simple">';
+        html += '<h4>大分類</h4>';
+        html += '<div class="tag-list">';
 
         Object.entries(categories).forEach(([slug, category]) => {
+            const isSelected = this.selectedTags.has(slug);
             html += `
-                <div class="tag-category">
-                    <h4 class="category-name">${this.escapeHtml(category.name)}</h4>
-                    <div class="tag-list">
-            `;
-
-            category.tags.forEach(tag => {
-                const isSelected = this.selectedTags.has(tag);
-                html += `
-                    <label class="tag-checkbox ${isSelected ? 'selected' : ''}">
-                        <input type="checkbox"
-                               value="${this.escapeHtml(tag)}"
-                               ${isSelected ? 'checked' : ''}>
-                        <span>${this.escapeHtml(tag)}</span>
-                    </label>
-                `;
-            });
-
-            html += `
-                    </div>
-                </div>
+                <label class="tag-checkbox ${isSelected ? 'selected' : ''}">
+                    <input type="checkbox"
+                           value="${this.escapeHtml(slug)}"
+                           ${isSelected ? 'checked' : ''}>
+                    <span>${this.escapeHtml(category.name)}</span>
+                </label>
             `;
         });
 
+        html += '</div>';
         html += '</div>';
 
         // Selected tags preview
