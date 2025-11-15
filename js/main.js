@@ -7,14 +7,20 @@ import { ImportManager } from './modules/import.js';
 import { LinkCardRenderer } from './modules/linkCard.js';
 import { SearchManager } from './modules/search.js';
 import { RandomPicker } from './modules/randomPicker.js';
+import { TagLibrary } from './modules/tagLibrary.js';
+import { TagSelector } from './modules/tagSelector.js';
+import { TagsManagement } from './modules/tagsManagement.js';
 
 class LinkSmithApp {
     constructor() {
         this.storage = new StorageManager();
+        this.tagLibrary = new TagLibrary();
+        this.tagSelector = new TagSelector(this.tagLibrary, this.storage);
         this.importer = new ImportManager(this.storage);
         this.renderer = new LinkCardRenderer(this.storage);
         this.search = new SearchManager(this.storage);
         this.randomPicker = new RandomPicker(this.storage, this.search);
+        this.tagsManagement = new TagsManagement(this.tagLibrary, this.tagSelector);
 
         this.currentView = 'dashboard';
         this.currentSort = 'newest';
@@ -29,6 +35,9 @@ class LinkSmithApp {
         // Load data
         await this.storage.init();
 
+        // Initialize tag library
+        this.tagLibrary.init();
+
         // Set up event callbacks
         this.setupCallbacks();
 
@@ -37,6 +46,7 @@ class LinkSmithApp {
         this.initDashboard();
         this.initImport();
         this.initRandomPicker();
+        this.initTags();
 
         // Render initial view
         this.renderDashboard();
@@ -108,6 +118,9 @@ class LinkSmithApp {
             if (randomResult) {
                 randomResult.innerHTML = '';
             }
+        } else if (viewName === 'tags') {
+            // Refresh tags management view
+            this.tagsManagement.init();
         }
     }
 
@@ -188,15 +201,17 @@ class LinkSmithApp {
      * Initialize import view
      */
     initImport() {
+        // Render batch tag selector
+        this.tagSelector.renderBatchSelector('batch-tag-selector');
+
         const importBtn = document.getElementById('import-btn');
         const importTextarea = document.getElementById('import-textarea');
-        const batchTagsInput = document.getElementById('batch-tags');
         const importResult = document.getElementById('import-result');
 
         if (importBtn) {
             importBtn.addEventListener('click', async () => {
                 const urlsText = importTextarea.value.trim();
-                const batchTags = batchTagsInput.value.trim();
+                const selectedTags = this.tagSelector.getSelectedTags();
 
                 if (!urlsText) {
                     this.showImportResult('Please enter at least one URL', 'error');
@@ -208,7 +223,9 @@ class LinkSmithApp {
                 importBtn.textContent = 'Importing...';
 
                 try {
-                    const result = await this.importer.importUrls(urlsText, batchTags);
+                    // Convert selected tags array to comma-separated string
+                    const batchTagsText = selectedTags.join(',');
+                    const result = await this.importer.importUrls(urlsText, batchTagsText);
 
                     this.showImportResult(
                         `✅ Successfully imported ${result.count} link(s)!`,
@@ -217,7 +234,8 @@ class LinkSmithApp {
 
                     // Clear inputs
                     importTextarea.value = '';
-                    batchTagsInput.value = '';
+                    this.tagSelector.clearSelection();
+                    this.tagSelector.renderBatchSelector('batch-tag-selector');
 
                     // Update dashboard
                     this.renderDashboard();
@@ -258,6 +276,14 @@ class LinkSmithApp {
      */
     initRandomPicker() {
         this.randomPicker.initUI();
+    }
+
+    /**
+     * Initialize tags management
+     */
+    initTags() {
+        // Tags management page is initialized when view is switched
+        // This is intentionally left empty for future additions
     }
 }
 

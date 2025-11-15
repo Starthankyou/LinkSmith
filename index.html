@@ -16,6 +16,7 @@
                 <button class="nav-btn active" data-view="dashboard">Dashboard</button>
                 <button class="nav-btn" data-view="import">Import</button>
                 <button class="nav-btn" data-view="random">Random Pick</button>
+                <button class="nav-btn" data-view="tags">Tags</button>
             </nav>
         </div>
     </header>
@@ -143,11 +144,13 @@ https://www.youtube.com/watch?v=example | JavaScript Tutorial | programming,js
 https://github.com/user/repo | | opensource,github"></textarea>
 
                     <div class="import-options">
-                        <label for="batch-tags">Add tags to all (comma-separated, optional):</label>
-                        <input type="text" id="batch-tags" class="batch-tags-input" placeholder="programming, tutorial, important">
+                        <h3>批次標籤（套用到所有匯入的連結）</h3>
+                        <div id="batch-tag-selector"></div>
                     </div>
 
-                    <button id="import-btn" class="btn btn-primary">Import Links</button>
+                    <div class="import-actions">
+                        <button id="import-btn" class="btn btn-primary">Import Links</button>
+                    </div>
 
                     <div id="import-result" class="import-result"></div>
                 </div>
@@ -165,6 +168,47 @@ https://github.com/user/repo | | opensource,github"></textarea>
 
                     <div id="random-result" class="random-result">
                         <!-- Random result card will appear here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tags Management View -->
+        <section id="tags-view" class="view">
+            <div class="container">
+                <div class="tags-management-container">
+                    <h2>標籤庫管理</h2>
+                    <p class="instruction">管理你的標籤分類和快捷組合</p>
+
+                    <!-- Tag Statistics -->
+                    <div class="tags-stats-section">
+                        <h3>📊 標籤使用統計</h3>
+                        <div id="tag-statistics"></div>
+                    </div>
+
+                    <!-- Tag Shortcuts Management -->
+                    <div class="tags-shortcuts-section">
+                        <h3>⚡ 快捷組合</h3>
+                        <div id="shortcuts-list"></div>
+                        <button id="add-shortcut-btn" class="btn btn-secondary">+ 新增快捷組合</button>
+                    </div>
+
+                    <!-- Tag Categories Management -->
+                    <div class="tags-categories-section">
+                        <h3>🏷️ 標籤分類</h3>
+                        <div id="categories-list"></div>
+                        <button id="add-category-btn" class="btn btn-secondary">+ 新增標籤分類</button>
+                    </div>
+
+                    <!-- Library Actions -->
+                    <div class="tags-actions-section">
+                        <h3>🔧 標籤庫操作</h3>
+                        <div class="tags-actions">
+                            <button id="reset-library-btn" class="btn btn-secondary">重置為預設</button>
+                            <button id="export-library-btn" class="btn btn-secondary">匯出標籤庫</button>
+                            <button id="import-library-btn" class="btn btn-secondary">匯入標籤庫</button>
+                            <input type="file" id="import-library-file" accept=".json" style="display:none;">
+                        </div>
                     </div>
                 </div>
             </div>
