@@ -54,7 +54,16 @@ export class StorageManager {
                     // Add user links that don't already exist
                     userLinks.forEach(link => {
                         if (!existingIds.has(link.id)) {
-                            this.links.push(link);
+                            // Ensure backward compatibility: add new fields if missing
+                            const linkWithDefaults = {
+                                rating: null,
+                                viewCount: 0,
+                                lastViewed: null,
+                                skipCount: 0,
+                                implicitScore: 0.5,
+                                ...link // User data overrides defaults
+                            };
+                            this.links.push(linkWithDefaults);
                         }
                     });
 
@@ -154,7 +163,13 @@ export class StorageManager {
                 id: String(maxId + index + 1),
                 ...link,
                 status: 'unread',
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                // Rating and tracking fields
+                rating: null,           // 1-5 star rating (null = not rated)
+                viewCount: 0,           // Number of times opened
+                lastViewed: null,       // Last view timestamp
+                skipCount: 0,           // Number of times skipped
+                implicitScore: 0.5      // Auto-calculated score 0-1
             };
             this.links.unshift(linkWithId); // Add to beginning (newest first)
         });
@@ -420,5 +435,268 @@ export class StorageManager {
             skippedInSession: false
         }));
         this.saveUserData();
+    }
+
+    /* ============================================================
+       Rating and Recommendation System
+       ============================================================ */
+
+    /**
+     * Rate a link (1-5 stars)
+     */
+    rateLink(id, rating) {
+        if (rating < 1 || rating > 5) {
+            console.error('Rating must be between 1 and 5');
+            return null;
+        }
+
+        const updated = this.updateLink(id, { rating });
+
+        // Recalculate implicit score
+        if (updated) {
+            const implicitScore = this.calculateImplicitScore(updated);
+            this.updateLink(id, { implicitScore });
+        }
+
+        return updated;
+    }
+
+    /**
+     * Increment view count and update last viewed time
+     */
+    incrementViewCount(id) {
+        const link = this.links.find(l => l.id === id);
+        if (link) {
+            const viewCount = (link.viewCount || 0) + 1;
+            const lastViewed = new Date().toISOString();
+            const updated = this.updateLink(id, { viewCount, lastViewed });
+
+            // Recalculate implicit score
+            if (updated) {
+                const implicitScore = this.calculateImplicitScore(updated);
+                this.updateLink(id, { implicitScore });
+            }
+
+            return updated;
+        }
+        return null;
+    }
+
+    /**
+     * Increment skip count
+     */
+    incrementSkipCount(id) {
+        const link = this.links.find(l => l.id === id);
+        if (link) {
+            const skipCount = (link.skipCount || 0) + 1;
+            const updated = this.updateLink(id, { skipCount });
+
+            // Recalculate implicit score
+            if (updated) {
+                const implicitScore = this.calculateImplicitScore(updated);
+                this.updateLink(id, { implicitScore });
+            }
+
+            return updated;
+        }
+        return null;
+    }
+
+    /**
+     * Calculate implicit score based on user behavior (0-1)
+     */
+    calculateImplicitScore(link) {
+        let score = 0.5; // Base score
+
+        // Positive signals
+        if (link.status === 'read') score += 0.25;
+        if (link.viewCount > 0) {
+            score += Math.min(0.15, link.viewCount * 0.05); // Cap at +0.15
+        }
+
+        // Negative signals
+        if (link.skipCount > 0) {
+            score -= Math.min(0.3, link.skipCount * 0.15); // Cap at -0.3
+        }
+        if (link.frozen) score -= 0.35;
+        if (link.deleted) score = 0;
+
+        // Clamp between 0 and 1
+        return Math.max(0, Math.min(1, score));
+    }
+
+    /**
+     * Get user preferences based on ratings and behavior
+     */
+    getUserPreferences() {
+        const preferences = {
+            tagPreferences: {},      // Tag slug -> average score
+            platformPreferences: {}, // Platform -> average score
+            totalRated: 0,
+            averageRating: 0
+        };
+
+        const activeLinks = this.links.filter(l => !l.deleted);
+        let totalRating = 0;
+        let ratedCount = 0;
+
+        activeLinks.forEach(link => {
+            // Calculate effective score (rating if available, otherwise implicit)
+            const effectiveScore = link.rating || link.implicitScore || 0.5;
+
+            // Track ratings
+            if (link.rating) {
+                totalRating += link.rating;
+                ratedCount++;
+            }
+
+            // Tag preferences
+            if (link.tags && Array.isArray(link.tags)) {
+                link.tags.forEach(tag => {
+                    if (!preferences.tagPreferences[tag]) {
+                        preferences.tagPreferences[tag] = { total: 0, count: 0 };
+                    }
+                    preferences.tagPreferences[tag].total += effectiveScore;
+                    preferences.tagPreferences[tag].count++;
+                });
+            }
+
+            // Platform preferences
+            if (link.platformTag) {
+                if (!preferences.platformPreferences[link.platformTag]) {
+                    preferences.platformPreferences[link.platformTag] = { total: 0, count: 0 };
+                }
+                preferences.platformPreferences[link.platformTag].total += effectiveScore;
+                preferences.platformPreferences[link.platformTag].count++;
+            }
+        });
+
+        // Calculate averages
+        Object.keys(preferences.tagPreferences).forEach(tag => {
+            const pref = preferences.tagPreferences[tag];
+            preferences.tagPreferences[tag] = pref.total / pref.count;
+        });
+
+        Object.keys(preferences.platformPreferences).forEach(platform => {
+            const pref = preferences.platformPreferences[platform];
+            preferences.platformPreferences[platform] = pref.total / pref.count;
+        });
+
+        preferences.totalRated = ratedCount;
+        preferences.averageRating = ratedCount > 0 ? totalRating / ratedCount : 0;
+
+        return preferences;
+    }
+
+    /**
+     * Calculate recommendation score for a link (0-1)
+     */
+    calculateRecommendationScore(link, userPreferences) {
+        if (!link || link.deleted) return 0;
+
+        // 1. Base score (rating if available, otherwise implicit)
+        const baseScore = link.rating ? link.rating / 5 : (link.implicitScore || 0.5);
+
+        // 2. Tag similarity score
+        let tagScore = 0;
+        let tagMatches = 0;
+        if (link.tags && Array.isArray(link.tags)) {
+            link.tags.forEach(tag => {
+                if (userPreferences.tagPreferences[tag]) {
+                    tagScore += userPreferences.tagPreferences[tag];
+                    tagMatches++;
+                }
+            });
+        }
+        const avgTagScore = tagMatches > 0 ? tagScore / tagMatches / 5 : 0.5;
+
+        // 3. Platform preference
+        let platformScore = 0.5;
+        if (link.platformTag && userPreferences.platformPreferences[link.platformTag]) {
+            platformScore = userPreferences.platformPreferences[link.platformTag] / 5;
+        }
+
+        // 4. Recency factor (newer content gets slight boost)
+        let recencyFactor = 1.0;
+        if (link.createdAt) {
+            const ageInDays = (Date.now() - new Date(link.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+            if (ageInDays < 7) recencyFactor = 1.1;
+            else if (ageInDays > 180) recencyFactor = 0.9;
+        }
+
+        // 5. Diversity bonus (unrated content gets small boost to avoid filter bubble)
+        const diversityBonus = !link.rating && link.viewCount === 0 ? 0.05 : 0;
+
+        // Final score calculation (weighted average)
+        const finalScore = (
+            baseScore * 0.35 +
+            avgTagScore * 0.30 +
+            platformScore * 0.20 +
+            diversityBonus * 0.15
+        ) * recencyFactor;
+
+        return Math.max(0, Math.min(1, finalScore));
+    }
+
+    /**
+     * Get recommended links (sorted by recommendation score)
+     */
+    getRecommendedLinks(filters = {}) {
+        const userPreferences = this.getUserPreferences();
+        const filteredLinks = this.getFilteredLinks(filters);
+
+        // Calculate recommendation score for each link
+        const linksWithScores = filteredLinks.map(link => ({
+            ...link,
+            recommendationScore: this.calculateRecommendationScore(link, userPreferences)
+        }));
+
+        // Sort by recommendation score (descending)
+        return linksWithScores.sort((a, b) => b.recommendationScore - a.recommendationScore);
+    }
+
+    /**
+     * Get weighted random link (for Smart Picker)
+     * 70% weight to high-scoring content, 30% exploration
+     */
+    getSmartRandomLink(filters = {}) {
+        const pool = this.getFilteredLinks(filters);
+
+        // Exclude frozen and skipped links
+        const now = new Date();
+        const eligible = pool.filter(link => {
+            if (link.frozen && new Date(link.frozen) > now) return false;
+            if (link.skippedInSession) return false;
+            if (link.status === 'unread' || Math.random() < 0.3) return true; // Prefer unread
+            return true;
+        });
+
+        if (eligible.length === 0) return null;
+
+        // Calculate weights based on recommendation scores
+        const userPreferences = this.getUserPreferences();
+        const weighted = eligible.map(link => ({
+            link,
+            weight: this.calculateRecommendationScore(link, userPreferences)
+        }));
+
+        // Add minimum weight for diversity (prevent zero-weight items)
+        weighted.forEach(item => {
+            item.weight = Math.max(0.1, item.weight);
+        });
+
+        // Weighted random selection
+        const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+        let random = Math.random() * totalWeight;
+
+        for (const item of weighted) {
+            random -= item.weight;
+            if (random <= 0) {
+                return item.link;
+            }
+        }
+
+        // Fallback
+        return eligible[0];
     }
 }

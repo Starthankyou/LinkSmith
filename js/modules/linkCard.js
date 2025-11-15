@@ -72,6 +72,16 @@ export class LinkCardRenderer {
                     if (a.status !== 'unread' && b.status === 'unread') return 1;
                     return new Date(b.createdAt) - new Date(a.createdAt);
                 });
+            case 'recommended':
+                // Use storage's recommendation algorithm
+                return this.storage.getRecommendedLinks({ includeDeleted: false });
+            case 'highest-rated':
+                return sorted.sort((a, b) => {
+                    const ratingA = a.rating || 0;
+                    const ratingB = b.rating || 0;
+                    if (ratingB !== ratingA) return ratingB - ratingA;
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
             default:
                 return sorted;
         }
@@ -93,7 +103,10 @@ export class LinkCardRenderer {
                             ${this.escapeHtml(link.title)}
                         </a>
                     </div>
-                    <span class="status-badge ${statusClass}">${statusClass}</span>
+                    <div class="link-header-right">
+                        ${this.renderStarRating(link)}
+                        <span class="status-badge ${statusClass}">${statusClass}</span>
+                    </div>
                 </div>
 
                 <div class="link-meta">
@@ -144,6 +157,22 @@ export class LinkCardRenderer {
         if (allTags.length === 0) return '';
 
         return `<div class="link-tags">${allTags.join('')}</div>`;
+    }
+
+    /**
+     * Render star rating
+     */
+    renderStarRating(link) {
+        const currentRating = link.rating || 0;
+        let html = '<div class="star-rating" data-link-id="' + link.id + '">';
+
+        for (let i = 1; i <= 5; i++) {
+            const filled = i <= currentRating;
+            html += `<span class="star ${filled ? 'filled' : ''}" data-rating="${i}">★</span>`;
+        }
+
+        html += '</div>';
+        return html;
     }
 
     /**
@@ -278,6 +307,16 @@ export class LinkCardRenderer {
                 this.handlePlayVideo(url, title, linkId);
             });
         });
+
+        // Star rating
+        document.querySelectorAll('.star-rating .star').forEach(star => {
+            star.addEventListener('click', (e) => {
+                const rating = parseInt(e.target.dataset.rating);
+                const ratingContainer = e.target.closest('.star-rating');
+                const linkId = ratingContainer.dataset.linkId;
+                this.handleRating(linkId, rating);
+            });
+        });
     }
 
     /**
@@ -285,6 +324,7 @@ export class LinkCardRenderer {
      */
     handleLinkOpen(linkId) {
         this.storage.markAsRead(linkId);
+        this.storage.incrementViewCount(linkId); // Track views for recommendations
         if (this.onLinkAction) {
             this.onLinkAction('open', linkId);
         }
@@ -315,6 +355,7 @@ export class LinkCardRenderer {
      */
     handleSkip(linkId) {
         this.storage.skipLink(linkId);
+        this.storage.incrementSkipCount(linkId); // Track skip for recommendations
         if (this.onLinkAction) {
             this.onLinkAction('skip', linkId);
         }
@@ -360,9 +401,20 @@ export class LinkCardRenderer {
             this.videoEmbed.showVideoModal(url, title);
             // Auto mark as read when playing
             this.storage.markAsRead(linkId);
+            this.storage.incrementViewCount(linkId); // Track views for recommendations
             if (this.onLinkAction) {
                 this.onLinkAction('play', linkId);
             }
+        }
+    }
+
+    /**
+     * Handle rating
+     */
+    handleRating(linkId, rating) {
+        this.storage.rateLink(linkId, rating);
+        if (this.onLinkAction) {
+            this.onLinkAction('rate', linkId);
         }
     }
 

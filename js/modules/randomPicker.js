@@ -12,11 +12,11 @@ export class RandomPicker {
     }
 
     /**
-     * Pick a random link based on current filters
+     * Pick a smart random link based on current filters and recommendations
      */
     pickRandom() {
         const filters = this.search.getFilters();
-        const randomLink = this.storage.getRandomLink(filters);
+        const randomLink = this.storage.getSmartRandomLink(filters); // Use smart picker
 
         if (randomLink) {
             this.currentRandomLink = randomLink;
@@ -167,6 +167,7 @@ export class RandomPicker {
     handleOpen(linkId, url) {
         // Mark as read
         this.storage.markAsRead(linkId);
+        this.storage.incrementViewCount(linkId); // Track views for recommendations
 
         // Open in new tab
         window.open(url, '_blank', 'noopener,noreferrer');
@@ -185,6 +186,7 @@ export class RandomPicker {
      */
     handleSkip(linkId) {
         this.storage.skipLink(linkId);
+        this.storage.incrementSkipCount(linkId); // Track skip for recommendations
         this.showMessage('Link skipped! Picking another...');
 
         // Pick another immediately

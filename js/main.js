@@ -25,7 +25,7 @@ class LinkSmithApp {
         this.tagsManagement = new TagsManagement(this.tagLibrary, this.tagSelector, this.storage);
 
         this.currentView = 'dashboard';
-        this.currentSort = 'newest';
+        this.currentSort = 'recommended'; // Default to recommended sort
     }
 
     /**

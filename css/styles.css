@@ -1412,3 +1412,108 @@ body {
         margin: 1rem 0;
     }
 }
+
+/* ============================================================
+   Rating and Recommendation System
+   ============================================================ */
+
+/* Link Header Layout */
+.link-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.link-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* Star Rating */
+.star-rating {
+    display: inline-flex;
+    gap: 0.125rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.star {
+    font-size: 1.125rem;
+    color: var(--border-color);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.star:hover,
+.star.filled {
+    color: #ffd700;
+    text-shadow: 0 0 4px rgba(255, 215, 0, 0.3);
+}
+
+.star-rating:hover .star {
+    color: #e0e0e0;
+}
+
+.star-rating:hover .star:hover,
+.star-rating:hover .star:hover ~ .star {
+    color: #ffd700;
+}
+
+/* Recommendation Badge */
+.recommendation-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+}
+
+/* Rating Stats */
+.rating-stats {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.view-count::before {
+    content: "👁 ";
+}
+
+.skip-count::before {
+    content: "⏭ ";
+}
+
+/* Sort Controls Enhancement */
+.sort-select option {
+    padding: 0.5rem;
+}
+
+.sort-select option[value="recommended"],
+.sort-select option[value="highest-rated"] {
+    font-weight: 600;
+}
+
+/* Responsive Design for Rating */
+@media (max-width: 768px) {
+    .link-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .link-header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .star {
+        font-size: 1rem;
+    }
+}
