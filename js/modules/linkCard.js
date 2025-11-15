@@ -4,8 +4,9 @@
  */
 
 export class LinkCardRenderer {
-    constructor(storageManager) {
+    constructor(storageManager, videoEmbed = null) {
         this.storage = storageManager;
+        this.videoEmbed = videoEmbed;
         this.currentPage = 1;
         this.itemsPerPage = 20;
         this.currentLinks = [];
@@ -103,6 +104,10 @@ export class LinkCardRenderer {
                 ${this.renderTags(link)}
 
                 <div class="link-actions">
+                    ${this.videoEmbed && this.videoEmbed.isVideoLink(link.url)
+                        ? `<button class="btn btn-sm btn-primary play-video" data-link-id="${link.id}" data-link-url="${this.escapeHtml(link.url)}" data-link-title="${this.escapeHtml(link.title)}">▶️ Play</button>`
+                        : ''
+                    }
                     ${link.status === 'read'
                         ? `<button class="btn btn-sm btn-secondary mark-unread" data-link-id="${link.id}">Mark Unread</button>`
                         : `<button class="btn btn-sm btn-success mark-read" data-link-id="${link.id}">Mark Read</button>`
@@ -263,6 +268,16 @@ export class LinkCardRenderer {
                 this.handleDelete(linkId);
             });
         });
+
+        // Play video
+        document.querySelectorAll('.play-video').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const url = e.target.dataset.linkUrl;
+                const title = e.target.dataset.linkTitle;
+                const linkId = e.target.dataset.linkId;
+                this.handlePlayVideo(url, title, linkId);
+            });
+        });
     }
 
     /**
@@ -333,6 +348,20 @@ export class LinkCardRenderer {
             this.storage.deleteLink(linkId);
             if (this.onLinkAction) {
                 this.onLinkAction('delete', linkId);
+            }
+        }
+    }
+
+    /**
+     * Handle play video
+     */
+    handlePlayVideo(url, title, linkId) {
+        if (this.videoEmbed) {
+            this.videoEmbed.showVideoModal(url, title);
+            // Auto mark as read when playing
+            this.storage.markAsRead(linkId);
+            if (this.onLinkAction) {
+                this.onLinkAction('play', linkId);
             }
         }
     }

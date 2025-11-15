@@ -10,16 +10,18 @@ import { RandomPicker } from './modules/randomPicker.js';
 import { TagLibrary } from './modules/tagLibrary.js';
 import { TagSelector } from './modules/tagSelector.js';
 import { TagsManagement } from './modules/tagsManagement.js';
+import { VideoEmbed } from './modules/videoEmbed.js';
 
 class LinkSmithApp {
     constructor() {
         this.storage = new StorageManager();
+        this.videoEmbed = new VideoEmbed();
         this.tagLibrary = new TagLibrary();
         this.tagSelector = new TagSelector(this.tagLibrary, this.storage);
         this.importer = new ImportManager(this.storage);
-        this.renderer = new LinkCardRenderer(this.storage);
+        this.renderer = new LinkCardRenderer(this.storage, this.videoEmbed);
         this.search = new SearchManager(this.storage);
-        this.randomPicker = new RandomPicker(this.storage, this.search);
+        this.randomPicker = new RandomPicker(this.storage, this.search, this.videoEmbed);
         this.tagsManagement = new TagsManagement(this.tagLibrary, this.tagSelector, this.storage);
 
         this.currentView = 'dashboard';

@@ -4,9 +4,10 @@
  */
 
 export class RandomPicker {
-    constructor(storageManager, searchManager) {
+    constructor(storageManager, searchManager, videoEmbed = null) {
         this.storage = storageManager;
         this.search = searchManager;
+        this.videoEmbed = videoEmbed;
         this.currentRandomLink = null;
     }
 
@@ -47,6 +48,9 @@ export class RandomPicker {
      * Render random card
      */
     renderRandomCard(link) {
+        const isVideo = this.videoEmbed && this.videoEmbed.isVideoLink(link.url);
+        const videoPlayer = isVideo ? this.videoEmbed.generatePlayerHtml(link.url, { height: '400' }) : '';
+
         return `
             <div class="random-card">
                 <div class="link-title">
@@ -63,6 +67,12 @@ export class RandomPicker {
                 </div>
 
                 ${this.renderTags(link)}
+
+                ${videoPlayer ? `
+                    <div class="random-video-player">
+                        ${videoPlayer}
+                    </div>
+                ` : ''}
 
                 <div class="link-actions">
                     <button class="btn btn-primary random-open" data-link-id="${link.id}" data-url="${this.escapeHtml(link.url)}">
