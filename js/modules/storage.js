@@ -7,6 +7,7 @@ export class StorageManager {
     constructor() {
         this.links = [];
         this.localStorage_key = 'linksmith_user_data';
+        this.localStorage_links_key = 'linksmith_user_links'; // Store complete user links
     }
 
     /**
@@ -14,7 +15,8 @@ export class StorageManager {
      */
     async init() {
         await this.loadLinks();
-        this.loadUserData();
+        this.loadUserLinks(); // Load user-imported links from LocalStorage
+        this.loadUserData();   // Merge user-specific data (status, frozen, etc.)
     }
 
     /**
@@ -32,6 +34,35 @@ export class StorageManager {
         } catch (error) {
             console.warn('No links.json found, starting with empty array');
             this.links = [];
+        }
+    }
+
+    /**
+     * Load user-imported links from LocalStorage
+     * This persists user-added links across page refreshes
+     */
+    loadUserLinks() {
+        try {
+            const data = localStorage.getItem(this.localStorage_links_key);
+            if (data) {
+                const userLinks = JSON.parse(data);
+                // Merge user links with base links (user links take precedence)
+                if (Array.isArray(userLinks) && userLinks.length > 0) {
+                    // Create a map of existing link IDs
+                    const existingIds = new Set(this.links.map(l => l.id));
+
+                    // Add user links that don't already exist
+                    userLinks.forEach(link => {
+                        if (!existingIds.has(link.id)) {
+                            this.links.push(link);
+                        }
+                    });
+
+                    console.log(`Loaded ${userLinks.length} user links from LocalStorage`);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user links from LocalStorage:', error);
         }
     }
 
@@ -94,6 +125,23 @@ export class StorageManager {
     }
 
     /**
+     * Save all links to LocalStorage
+     * This persists the complete links array including user-imported links
+     */
+    saveAllLinks() {
+        try {
+            localStorage.setItem(this.localStorage_links_key, JSON.stringify(this.links));
+            console.log(`Saved ${this.links.length} links to LocalStorage`);
+        } catch (error) {
+            console.error('Error saving links to LocalStorage:', error);
+            // If quota exceeded, try to save only user-added links
+            if (error.name === 'QuotaExceededError') {
+                console.warn('LocalStorage quota exceeded. Consider exporting your data.');
+            }
+        }
+    }
+
+    /**
      * Add new links (used during import)
      */
     addLinks(newLinks) {
@@ -111,8 +159,9 @@ export class StorageManager {
             this.links.unshift(linkWithId); // Add to beginning (newest first)
         });
 
-        this.saveToJson();
-        this.saveUserData();
+        this.saveAllLinks();  // Save complete links to LocalStorage
+        this.saveUserData();  // Save user metadata
+        this.saveToJson();    // Console log for debugging
     }
 
     /**
@@ -122,7 +171,8 @@ export class StorageManager {
         const index = this.links.findIndex(link => link.id === id);
         if (index !== -1) {
             this.links[index] = { ...this.links[index], ...updates };
-            this.saveUserData();
+            this.saveAllLinks();  // Save complete links to LocalStorage
+            this.saveUserData();  // Save user metadata
             return this.links[index];
         }
         return null;
@@ -198,7 +248,8 @@ export class StorageManager {
         const index = this.links.findIndex(link => link.id === id);
         if (index !== -1) {
             this.links.splice(index, 1);
-            this.saveUserData();
+            this.saveAllLinks();  // Save complete links to LocalStorage
+            this.saveUserData();  // Save user metadata
             return true;
         }
         return false;
