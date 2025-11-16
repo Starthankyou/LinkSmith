@@ -82,23 +82,27 @@ export class StorageManager {
      * Uses postMessage to communicate with the extension content script
      */
     async loadFromChromeExtension() {
-        // Wait for extension to announce itself via postMessage
         return new Promise((resolve) => {
             let extensionDetected = false;
+
+            // Set timeout for extension detection
             const timeout = setTimeout(() => {
                 if (!extensionDetected) {
                     console.log('Chrome Extension not detected - skipping sync');
+                    window.removeEventListener('message', messageHandler);
                     resolve();
                 }
-            }, 1000); // Wait 1 second for extension
+            }, 1000); // Wait 1 second for extension response
 
-            // Listen for extension ready message
+            // Listen for messages from extension
             const messageHandler = async (event) => {
                 // Only accept messages from same origin
                 if (event.source !== window) return;
 
-                // Extension announces itself
+                // Extension responds to our ping
                 if (event.data.type === 'LINKSMITH_EXTENSION_READY') {
+                    if (extensionDetected) return; // Already processed
+
                     clearTimeout(timeout);
                     extensionDetected = true;
 
@@ -186,7 +190,12 @@ export class StorageManager {
                 }
             };
 
+            // Start listening for messages
             window.addEventListener('message', messageHandler);
+
+            // Actively ping the extension to check if it exists
+            console.log('🔍 Checking for LinkSmith Extension...');
+            window.postMessage({ type: 'LINKSMITH_PAGE_READY' }, '*');
         });
     }
 

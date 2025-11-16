@@ -4,18 +4,21 @@
  * Uses postMessage to avoid CSP violations
  */
 
-// Send extension ID to the page via postMessage
-window.postMessage({
-    type: 'LINKSMITH_EXTENSION_READY',
-    extensionId: chrome.runtime.id
-}, '*');
-
 console.log('🔗 LinkSmith Extension helper loaded, ID:', chrome.runtime.id);
 
-// Listen for sync requests from the page
+// Listen for messages from the page
 window.addEventListener('message', (event) => {
     // Only accept messages from same origin
     if (event.source !== window) return;
+
+    // Page is checking if extension exists - respond
+    if (event.data.type === 'LINKSMITH_PAGE_READY') {
+        console.log('📨 Page ready, announcing extension presence');
+        window.postMessage({
+            type: 'LINKSMITH_EXTENSION_READY',
+            extensionId: chrome.runtime.id
+        }, '*');
+    }
 
     if (event.data.type === 'LINKSMITH_SYNC_REQUEST') {
         console.log('📨 Received sync request from page');
