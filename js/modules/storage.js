@@ -79,97 +79,115 @@ export class StorageManager {
     /**
      * Load links from Chrome Extension sync storage
      * This syncs YouTube videos saved from the Chrome Extension across devices
-     * Uses message passing to communicate with the extension
+     * Uses postMessage to communicate with the extension content script
      */
     async loadFromChromeExtension() {
-        // Check if Extension ID is available (injected by content script)
-        if (typeof window.LINKSMITH_EXTENSION_ID === 'undefined') {
-            console.log('Chrome Extension not detected - skipping sync');
-            return;
-        }
-
-        // Check if chrome.runtime is available
-        if (typeof chrome === 'undefined' || !chrome.runtime) {
-            console.log('Chrome runtime not available - skipping sync');
-            return;
-        }
-
-        const extensionId = window.LINKSMITH_EXTENSION_ID;
-        console.log('🔗 Requesting sync from Extension:', extensionId);
-
-        try {
-            // Request links from the extension
-            const response = await new Promise((resolve, reject) => {
-                chrome.runtime.sendMessage(
-                    extensionId,
-                    { action: 'syncFromExtension' },
-                    (response) => {
-                        if (chrome.runtime.lastError) {
-                            reject(chrome.runtime.lastError);
-                        } else {
-                            resolve(response);
-                        }
-                    }
-                );
-            });
-
-            if (!response || !response.success) {
-                console.log('Failed to sync from Extension:', response?.error || 'Unknown error');
-                return;
-            }
-
-            const pendingLinks = response.links || [];
-
-            if (pendingLinks.length === 0) {
-                console.log('No pending links from Chrome Extension');
-                return;
-            }
-
-            console.log(`Found ${pendingLinks.length} links from Chrome Extension`);
-
-            // Merge with existing links
-            const existingIds = new Set(this.links.map(l => l.id));
-            let importedCount = 0;
-
-            pendingLinks.forEach(link => {
-                if (!existingIds.has(link.id)) {
-                    // Ensure all required fields are present
-                    const linkWithDefaults = {
-                        rating: null,
-                        viewCount: 0,
-                        lastViewed: null,
-                        skipCount: 0,
-                        implicitScore: 0.5,
-                        ...link
-                    };
-                    this.links.push(linkWithDefaults);
-                    importedCount++;
+        // Wait for extension to announce itself via postMessage
+        return new Promise((resolve) => {
+            let extensionDetected = false;
+            const timeout = setTimeout(() => {
+                if (!extensionDetected) {
+                    console.log('Chrome Extension not detected - skipping sync');
+                    resolve();
                 }
-            });
+            }, 1000); // Wait 1 second for extension
 
-            if (importedCount > 0) {
-                console.log(`✅ Imported ${importedCount} new links from Chrome Extension`);
+            // Listen for extension ready message
+            const messageHandler = async (event) => {
+                // Only accept messages from same origin
+                if (event.source !== window) return;
 
-                // Save imported links to LocalStorage for persistence
-                this.saveAllLinks();
+                // Extension announces itself
+                if (event.data.type === 'LINKSMITH_EXTENSION_READY') {
+                    clearTimeout(timeout);
+                    extensionDetected = true;
 
-                // Request extension to clear the synced links
-                chrome.runtime.sendMessage(
-                    extensionId,
-                    { action: 'clearSyncedLinks' },
-                    (clearResponse) => {
-                        if (clearResponse && clearResponse.success) {
-                            console.log('🔄 Synced and cleared Chrome Extension storage');
-                        } else {
-                            console.warn('Failed to clear Extension storage:', clearResponse?.error);
-                        }
+                    const extensionId = event.data.extensionId;
+                    console.log('🔗 LinkSmith Extension detected:', extensionId);
+
+                    // Request sync
+                    console.log('📤 Requesting sync from Extension');
+                    window.postMessage({ type: 'LINKSMITH_SYNC_REQUEST' }, '*');
+                }
+
+                // Handle sync response
+                if (event.data.type === 'LINKSMITH_SYNC_RESPONSE') {
+                    window.removeEventListener('message', messageHandler);
+
+                    const response = event.data.data;
+
+                    if (!response || !response.success) {
+                        console.log('Failed to sync from Extension:', response?.error || 'Unknown error');
+                        resolve();
+                        return;
                     }
-                );
-            }
 
-        } catch (error) {
-            console.error('Error loading from Chrome Extension:', error);
-        }
+                    const pendingLinks = response.links || [];
+
+                    if (pendingLinks.length === 0) {
+                        console.log('No pending links from Chrome Extension');
+                        resolve();
+                        return;
+                    }
+
+                    console.log(`Found ${pendingLinks.length} links from Chrome Extension`);
+
+                    // Merge with existing links
+                    const existingIds = new Set(this.links.map(l => l.id));
+                    let importedCount = 0;
+
+                    pendingLinks.forEach(link => {
+                        if (!existingIds.has(link.id)) {
+                            // Ensure all required fields are present
+                            const linkWithDefaults = {
+                                rating: null,
+                                viewCount: 0,
+                                lastViewed: null,
+                                skipCount: 0,
+                                implicitScore: 0.5,
+                                ...link
+                            };
+                            this.links.push(linkWithDefaults);
+                            importedCount++;
+                        }
+                    });
+
+                    if (importedCount > 0) {
+                        console.log(`✅ Imported ${importedCount} new links from Chrome Extension`);
+
+                        // Save imported links to LocalStorage for persistence
+                        this.saveAllLinks();
+
+                        // Request extension to clear the synced links
+                        window.postMessage({ type: 'LINKSMITH_CLEAR_REQUEST' }, '*');
+
+                        // Wait for clear confirmation
+                        const clearHandler = (e) => {
+                            if (e.source === window && e.data.type === 'LINKSMITH_CLEAR_RESPONSE') {
+                                window.removeEventListener('message', clearHandler);
+                                if (e.data.data && e.data.data.success) {
+                                    console.log('🔄 Synced and cleared Chrome Extension storage');
+                                } else {
+                                    console.warn('Failed to clear Extension storage');
+                                }
+                                resolve();
+                            }
+                        };
+                        window.addEventListener('message', clearHandler);
+
+                        // Timeout for clear request
+                        setTimeout(() => {
+                            window.removeEventListener('message', clearHandler);
+                            resolve();
+                        }, 2000);
+                    } else {
+                        resolve();
+                    }
+                }
+            };
+
+            window.addEventListener('message', messageHandler);
+        });
     }
 
     /**
