@@ -8,7 +8,7 @@ importScripts('utils/classifier.js');
 
 const classifier = new AutoClassifier();
 
-// Listen for messages from content scripts and popup
+// Listen for messages from content scripts, popup, and web pages
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'saveVideo') {
         handleSaveVideo(request.data)
@@ -20,6 +20,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'getStats') {
         getStats()
             .then(stats => sendResponse({ success: true, stats }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+    }
+
+    // Handle sync request from LinkSmith web app
+    if (request.action === 'syncFromExtension') {
+        syncLinksToWebApp()
+            .then(result => sendResponse(result))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+    }
+
+    // Handle clear synced links request
+    if (request.action === 'clearSyncedLinks') {
+        clearSyncedLinks()
+            .then(result => sendResponse(result))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+    }
+});
+
+// Also listen for external messages (from web pages)
+chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
+    console.log('📨 External message received from:', sender.url);
+
+    // Only respond to sync requests from localhost
+    if (request.action === 'syncFromExtension') {
+        syncLinksToWebApp()
+            .then(result => sendResponse(result))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+    }
+
+    if (request.action === 'clearSyncedLinks') {
+        clearSyncedLinks()
+            .then(result => sendResponse(result))
             .catch(error => sendResponse({ success: false, error: error.message }));
         return true;
     }
@@ -133,6 +169,54 @@ function showNotification(title, message) {
         message: message,
         priority: 1
     });
+}
+
+/**
+ * Sync links from Extension to web app
+ * Returns all pending links for import
+ */
+async function syncLinksToWebApp() {
+    try {
+        const storage = await chrome.storage.sync.get(['linksmith_pending_links']);
+        const pendingLinks = storage.linksmith_pending_links || [];
+
+        console.log(`📤 Syncing ${pendingLinks.length} links to web app`);
+
+        return {
+            success: true,
+            links: pendingLinks,
+            count: pendingLinks.length
+        };
+    } catch (error) {
+        console.error('❌ Error syncing links:', error);
+        return {
+            success: false,
+            error: error.message,
+            links: []
+        };
+    }
+}
+
+/**
+ * Clear synced links from storage
+ * Called after web app successfully imports the links
+ */
+async function clearSyncedLinks() {
+    try {
+        await chrome.storage.sync.set({ linksmith_pending_links: [] });
+        console.log('🔄 Cleared synced links from extension storage');
+
+        return {
+            success: true,
+            message: 'Synced links cleared'
+        };
+    } catch (error) {
+        console.error('❌ Error clearing synced links:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
 }
 
 // Monitor storage usage (chrome.storage.sync has 100KB limit)

@@ -79,23 +79,46 @@ export class StorageManager {
     /**
      * Load links from Chrome Extension sync storage
      * This syncs YouTube videos saved from the Chrome Extension across devices
+     * Uses message passing to communicate with the extension
      */
     async loadFromChromeExtension() {
-        // Check if chrome.storage is available (extension context)
-        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+        // Check if Extension ID is available (injected by content script)
+        if (typeof window.LINKSMITH_EXTENSION_ID === 'undefined') {
             console.log('Chrome Extension not detected - skipping sync');
             return;
         }
 
+        // Check if chrome.runtime is available
+        if (typeof chrome === 'undefined' || !chrome.runtime) {
+            console.log('Chrome runtime not available - skipping sync');
+            return;
+        }
+
+        const extensionId = window.LINKSMITH_EXTENSION_ID;
+        console.log('🔗 Requesting sync from Extension:', extensionId);
+
         try {
-            // Load pending links from chrome.storage.sync
-            const result = await new Promise((resolve) => {
-                chrome.storage.sync.get(['linksmith_pending_links'], (data) => {
-                    resolve(data);
-                });
+            // Request links from the extension
+            const response = await new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage(
+                    extensionId,
+                    { action: 'syncFromExtension' },
+                    (response) => {
+                        if (chrome.runtime.lastError) {
+                            reject(chrome.runtime.lastError);
+                        } else {
+                            resolve(response);
+                        }
+                    }
+                );
             });
 
-            const pendingLinks = result.linksmith_pending_links || [];
+            if (!response || !response.success) {
+                console.log('Failed to sync from Extension:', response?.error || 'Unknown error');
+                return;
+            }
+
+            const pendingLinks = response.links || [];
 
             if (pendingLinks.length === 0) {
                 console.log('No pending links from Chrome Extension');
@@ -130,14 +153,18 @@ export class StorageManager {
                 // Save imported links to LocalStorage for persistence
                 this.saveAllLinks();
 
-                // Clear chrome.storage.sync after successful import
-                await new Promise((resolve) => {
-                    chrome.storage.sync.set({ linksmith_pending_links: [] }, () => {
-                        resolve();
-                    });
-                });
-
-                console.log('🔄 Synced and cleared Chrome Extension storage');
+                // Request extension to clear the synced links
+                chrome.runtime.sendMessage(
+                    extensionId,
+                    { action: 'clearSyncedLinks' },
+                    (clearResponse) => {
+                        if (clearResponse && clearResponse.success) {
+                            console.log('🔄 Synced and cleared Chrome Extension storage');
+                        } else {
+                            console.warn('Failed to clear Extension storage:', clearResponse?.error);
+                        }
+                    }
+                );
             }
 
         } catch (error) {
