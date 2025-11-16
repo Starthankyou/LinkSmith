@@ -11,6 +11,7 @@ import { TagLibrary } from './modules/tagLibrary.js';
 import { TagSelector } from './modules/tagSelector.js';
 import { TagsManagement } from './modules/tagsManagement.js';
 import { VideoEmbed } from './modules/videoEmbed.js';
+import { SettingsManager } from './modules/settings.js';
 
 class LinkSmithApp {
     constructor() {
@@ -23,6 +24,7 @@ class LinkSmithApp {
         this.search = new SearchManager(this.storage);
         this.randomPicker = new RandomPicker(this.storage, this.search, this.videoEmbed);
         this.tagsManagement = new TagsManagement(this.tagLibrary, this.tagSelector, this.storage);
+        this.settings = new SettingsManager();
 
         this.currentView = 'dashboard';
         this.currentSort = 'recommended'; // Default to recommended sort
@@ -40,6 +42,27 @@ class LinkSmithApp {
         // Initialize tag library
         this.tagLibrary.init();
 
+        // Connect settings to storage
+        this.settings.setStorageManager(this.storage);
+
+        // Load settings
+        this.settings.loadSettings();
+
+        // Auto-sync on page load if enabled
+        if (this.settings.getSettings().autoSyncEnabled && this.settings.isConfigured()) {
+            console.log('🔄 Auto-sync enabled, syncing on page load...');
+            this.settings.syncNow().catch(error => {
+                console.error('❌ Auto-sync failed:', error);
+            });
+        }
+
+        // Setup auto-sync interval if enabled
+        if (this.settings.getSettings().autoSyncEnabled &&
+            this.settings.getSettings().syncInterval > 0 &&
+            this.settings.isConfigured()) {
+            this.settings.setupAutoSync();
+        }
+
         // Set up event callbacks
         this.setupCallbacks();
 
@@ -49,6 +72,7 @@ class LinkSmithApp {
         this.initImport();
         this.initRandomPicker();
         this.initTags();
+        this.initSettings();
 
         // Render initial view
         this.renderDashboard();
@@ -123,6 +147,9 @@ class LinkSmithApp {
         } else if (viewName === 'tags') {
             // Refresh tags management view
             this.tagsManagement.init();
+        } else if (viewName === 'settings') {
+            // Refresh settings view
+            this.settings.init();
         }
     }
 
@@ -142,6 +169,14 @@ class LinkSmithApp {
             });
         }
 
+        // Dashboard sync button
+        const dashboardSyncBtn = document.getElementById('dashboard-sync-btn');
+        if (dashboardSyncBtn) {
+            dashboardSyncBtn.addEventListener('click', async () => {
+                await this.handleDashboardSync();
+            });
+        }
+
         // Pagination controls
         const prevBtn = document.getElementById('prev-page');
         const nextBtn = document.getElementById('next-page');
@@ -156,6 +191,41 @@ class LinkSmithApp {
             nextBtn.addEventListener('click', () => {
                 this.renderer.nextPage();
             });
+        }
+    }
+
+    /**
+     * Handle dashboard sync button click
+     */
+    async handleDashboardSync() {
+        const syncBtn = document.getElementById('dashboard-sync-btn');
+
+        // Check if sync is configured
+        if (!this.settings.isConfigured() && !this.settings.getSettings().githubToken) {
+            if (confirm('Sync is not configured. Go to Settings to set up GitHub Gist sync?')) {
+                this.switchView('settings');
+            }
+            return;
+        }
+
+        // Disable button during sync
+        if (syncBtn) {
+            syncBtn.disabled = true;
+            syncBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">Syncing...</span>';
+        }
+
+        try {
+            await this.settings.syncNow();
+
+            // Refresh dashboard after sync
+            this.renderDashboard();
+
+        } finally {
+            // Re-enable button
+            if (syncBtn) {
+                syncBtn.disabled = false;
+                syncBtn.innerHTML = '<span class="btn-icon">☁️</span><span class="btn-text">Sync</span>';
+            }
         }
     }
 
@@ -286,6 +356,14 @@ class LinkSmithApp {
     initTags() {
         // Tags management page is initialized when view is switched
         // This is intentionally left empty for future additions
+    }
+
+    /**
+     * Initialize settings
+     */
+    initSettings() {
+        // Settings page is initialized when view is switched
+        // This is intentionally left empty - settings.init() is called in switchView
     }
 }
 
