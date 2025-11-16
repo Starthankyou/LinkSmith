@@ -133,12 +133,12 @@ function attachButtonListeners() {
 
     // Open LinkSmith button
     document.getElementById('open-linksmith-btn')?.addEventListener('click', () => {
-        chrome.tabs.create({ url: 'http://localhost:8000' });
+        chrome.tabs.create({ url: 'https://starthankyou.github.io/LinkSmith/' });
     });
 
     // View LinkSmith button
     document.getElementById('view-linksmith-btn')?.addEventListener('click', () => {
-        chrome.tabs.create({ url: 'http://localhost:8000' });
+        chrome.tabs.create({ url: 'https://starthankyou.github.io/LinkSmith/' });
     });
 
     // Retry button

@@ -1,6 +1,7 @@
 /**
  * LinkSmith Helper Content Script
- * Injected into localhost pages to enable communication with the extension
+ * Injected into LinkSmith web pages to enable communication with the extension
+ * Supports both localhost (http://localhost:*) and GitHub Pages (https://starthankyou.github.io/*)
  * Uses postMessage to avoid CSP violations
  */
 

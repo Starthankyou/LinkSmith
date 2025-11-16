@@ -27,7 +27,8 @@
     {
       "matches": [
         "http://localhost:*/*",
-        "http://127.0.0.1:*/*"
+        "http://127.0.0.1:*/*",
+        "https://starthankyou.github.io/*"
       ],
       "js": ["content/linksmith-helper.js"],
       "run_at": "document_start"
@@ -39,7 +40,8 @@
   "externally_connectable": {
     "matches": [
       "http://localhost:*/*",
-      "http://127.0.0.1:*/*"
+      "http://127.0.0.1:*/*",
+      "https://starthankyou.github.io/*"
     ]
   }
 }
