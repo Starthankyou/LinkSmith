@@ -16,6 +16,7 @@ export class StorageManager {
     async init() {
         await this.loadLinks();
         this.loadUserLinks(); // Load user-imported links from LocalStorage
+        await this.loadFromChromeExtension(); // Load links from Chrome Extension sync
         this.loadUserData();   // Merge user-specific data (status, frozen, etc.)
     }
 
@@ -72,6 +73,75 @@ export class StorageManager {
             }
         } catch (error) {
             console.error('Error loading user links from LocalStorage:', error);
+        }
+    }
+
+    /**
+     * Load links from Chrome Extension sync storage
+     * This syncs YouTube videos saved from the Chrome Extension across devices
+     */
+    async loadFromChromeExtension() {
+        // Check if chrome.storage is available (extension context)
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+            console.log('Chrome Extension not detected - skipping sync');
+            return;
+        }
+
+        try {
+            // Load pending links from chrome.storage.sync
+            const result = await new Promise((resolve) => {
+                chrome.storage.sync.get(['linksmith_pending_links'], (data) => {
+                    resolve(data);
+                });
+            });
+
+            const pendingLinks = result.linksmith_pending_links || [];
+
+            if (pendingLinks.length === 0) {
+                console.log('No pending links from Chrome Extension');
+                return;
+            }
+
+            console.log(`Found ${pendingLinks.length} links from Chrome Extension`);
+
+            // Merge with existing links
+            const existingIds = new Set(this.links.map(l => l.id));
+            let importedCount = 0;
+
+            pendingLinks.forEach(link => {
+                if (!existingIds.has(link.id)) {
+                    // Ensure all required fields are present
+                    const linkWithDefaults = {
+                        rating: null,
+                        viewCount: 0,
+                        lastViewed: null,
+                        skipCount: 0,
+                        implicitScore: 0.5,
+                        ...link
+                    };
+                    this.links.push(linkWithDefaults);
+                    importedCount++;
+                }
+            });
+
+            if (importedCount > 0) {
+                console.log(`✅ Imported ${importedCount} new links from Chrome Extension`);
+
+                // Save imported links to LocalStorage for persistence
+                this.saveAllLinks();
+
+                // Clear chrome.storage.sync after successful import
+                await new Promise((resolve) => {
+                    chrome.storage.sync.set({ linksmith_pending_links: [] }, () => {
+                        resolve();
+                    });
+                });
+
+                console.log('🔄 Synced and cleared Chrome Extension storage');
+            }
+
+        } catch (error) {
+            console.error('Error loading from Chrome Extension:', error);
         }
     }
 

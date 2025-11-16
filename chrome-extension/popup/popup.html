@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkSmith YouTube Saver</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <div class="header">
+            <h1>🔗 LinkSmith</h1>
+            <p class="subtitle">YouTube Saver</p>
+        </div>
+
+        <div id="content">
+            <!-- Loading state -->
+            <div id="loading" class="state">
+                <div class="spinner"></div>
+                <p>Loading...</p>
+            </div>
+
+            <!-- Video preview state -->
+            <div id="video-preview" class="state hidden">
+                <div class="video-info">
+                    <img id="thumbnail" src="" alt="Video thumbnail" class="thumbnail">
+                    <h3 id="video-title" class="video-title"></h3>
+                    <p id="channel-name" class="channel-name"></p>
+                </div>
+
+                <div class="classification">
+                    <h4>Auto-classified as:</h4>
+                    <div id="categories" class="categories"></div>
+                </div>
+
+                <button id="save-btn" class="btn btn-primary">
+                    💾 Save to LinkSmith
+                </button>
+            </div>
+
+            <!-- Not a video page state -->
+            <div id="not-video" class="state hidden">
+                <div class="empty-icon">📹</div>
+                <p>Please open a YouTube video page to save it to LinkSmith.</p>
+            </div>
+
+            <!-- Success state -->
+            <div id="success" class="state hidden">
+                <div class="success-icon">✅</div>
+                <h3>Saved Successfully!</h3>
+                <p class="success-message">Video has been saved to LinkSmith and will sync across your devices.</p>
+                <div id="stats" class="stats"></div>
+                <button id="open-linksmith-btn" class="btn btn-secondary">
+                    🚀 Open LinkSmith
+                </button>
+            </div>
+
+            <!-- Error state -->
+            <div id="error" class="state hidden">
+                <div class="error-icon">❌</div>
+                <h3>Error</h3>
+                <p id="error-message" class="error-message"></p>
+                <button id="retry-btn" class="btn btn-secondary">
+                    🔄 Retry
+                </button>
+            </div>
+
+            <!-- Already saved state -->
+            <div id="duplicate" class="state hidden">
+                <div class="info-icon">ℹ️</div>
+                <h3>Already Saved</h3>
+                <p>This video is already in your LinkSmith collection.</p>
+                <button id="view-linksmith-btn" class="btn btn-secondary">
+                    👀 View in LinkSmith
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div id="storage-info" class="storage-info"></div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
