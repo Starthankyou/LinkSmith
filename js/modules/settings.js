@@ -202,17 +202,21 @@ export class SettingsManager {
      * Update sync button states
      */
     updateSyncButtonStates() {
-        const isConfigured = this.settings.githubToken && this.settings.gistId;
+        const hasToken = !!this.settings.githubToken;
+        const isFullyConfigured = hasToken && !!this.settings.gistId;
 
         const syncNowBtn = document.getElementById('sync-now-btn');
         const forceUploadBtn = document.getElementById('force-upload-btn');
         const forceDownloadBtn = document.getElementById('force-download-btn');
         const deleteGistBtn = document.getElementById('delete-gist-btn');
 
-        if (syncNowBtn) syncNowBtn.disabled = !isConfigured;
-        if (forceUploadBtn) forceUploadBtn.disabled = !isConfigured;
-        if (forceDownloadBtn) forceDownloadBtn.disabled = !isConfigured;
-        if (deleteGistBtn) deleteGistBtn.disabled = !isConfigured;
+        // Sync Now and Force Upload only need token (will auto-create Gist)
+        if (syncNowBtn) syncNowBtn.disabled = !hasToken;
+        if (forceUploadBtn) forceUploadBtn.disabled = !hasToken;
+
+        // Force Download and Delete need both token and Gist ID
+        if (forceDownloadBtn) forceDownloadBtn.disabled = !isFullyConfigured;
+        if (deleteGistBtn) deleteGistBtn.disabled = !isFullyConfigured;
     }
 
     /**
