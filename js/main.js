@@ -200,8 +200,10 @@ class LinkSmithApp {
     async handleDashboardSync() {
         const syncBtn = document.getElementById('dashboard-sync-btn');
 
-        // Check if sync is configured
-        if (!this.settings.isConfigured() && !this.settings.getSettings().githubToken) {
+        // Check if GitHub token is configured
+        const hasToken = this.settings.getSettings().githubToken;
+
+        if (!hasToken) {
             if (confirm('Sync is not configured. Go to Settings to set up GitHub Gist sync?')) {
                 this.switchView('settings');
             }
